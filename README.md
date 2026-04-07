@@ -1,13 +1,13 @@
-Hospital-Management-System
-SQL Based Hospital Management System
+**Hospital-Management-System**
+**SQL Based Hospital Management System**
 
-Project Description
+**Project Description**
 The Hospital Management System is a database project designed to manage hospital operations such as patient records, doctor information, and appointment scheduling. This project demonstrates the use of SQL database concepts, including tables, relationships, queries, stored procedures, and triggers.
 
-Objectives
+**Objectives**
 Manage patient information Maintain doctor details Schedule appointments Store and retrieve hospital records efficiently
 
-Features
+**Features**
 Manage Patients
 Manage Doctors
 Book Appointments
@@ -15,14 +15,18 @@ Assigning Rooms
 Database Queries
 Stored Procedures
 Triggers
-Technologies Used
+
+
+**Technologies Used**
 MYSQL
 Database Design
 ER Diagram
-Tables
+
+
+**Tables**
 Patients Doctors Nurses Employees Receptionist Records Rooms Bills Test Report
 
-Relationship tables
+**Relationship tables**
 Consults - Doctors & Patients Assigned - Patients & Rooms Pays - Patients & Bills Governs - Nurses & Rooms Manitains - Receptionist & Records
 
 ER Diagram
