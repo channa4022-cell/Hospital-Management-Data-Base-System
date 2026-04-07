@@ -1,0 +1,264 @@
+create database Hospitaldb;
+use Hospitaldb;
+
+create table patient(P_ID int primary key,
+					 P_Name varchar(50),
+                     P_Age int,
+                     P_Gender varchar(20),
+                     P_DOB int,
+                     P_Mobileno varchar(20));
+ select * from patient;       
+ 
+ use Hospitaldb;
+ use HospitalDB;
+
+create table Doctors( D_ID int primary key,
+					 Dept varchar (50),
+                     Qualification varchar(50));
+select * from doctors;
+
+use HospitalDB;
+
+create table employees ( E_ID int primary key,
+						E_Name varchar(20),
+                        E_Salary int,
+                        E_Gender varchar(15),
+                        E_MobileNo varchar(15),
+                        E_State varchar(30),
+                        E_City varchar(30),
+                        E_PinNo int);
+select * from employees;
+use HospitalDB;
+
+create table Nurses ( N_ID int primary key,
+					 E_ID int);
+select * from nurses;
+
+use HospitalDB;
+
+create table receptionist (RCP_ID int primary key,
+						   E_ID int);
+select * from receptionist;
+
+use HospitalDB;
+
+create table records ( Record_No int primary key,
+					  App_No int);
+select * from records;
+
+use HospitalDB;
+
+create table rooms (R_ID int primary key,
+					R_Type varchar(20),
+                    R_Capacity int,
+                    R_Availability varchar(20));
+select * from rooms;
+
+create table test_report (TR_ID int primary key,
+						  P_ID int,
+                          R_ID int,
+                          Test_type varchar(20),
+                          Result varchar(50));
+select * from test_report;
+
+use HospitalDB;
+
+create table bills (B_ID int primary key,
+					P_ID int,
+                    Amount int);
+select * from bills;
+
+use HospitalDB;
+
+create table consults ( P_ID int,
+						D_ID int,
+                        Consult_Date date,
+                        primary key (P_ID,D_ID,Consult_Date),
+                        foreign key (P_ID) references patient (P_ID),
+                        foreign key (D_ID) references doctors (D_ID));
+select * from consults;
+
+use HospitalDB;
+
+create table Assigned ( P_ID int,
+						R_ID int,
+                        primary key (P_ID,R_ID),
+                        foreign key (P_ID) references patient (P_ID),
+                        foreign key (R_ID) references rooms (R_ID));
+select * from assigned;
+
+create table pays ( P_ID int,
+					B_ID int,
+                    primary key (P_ID,B_ID),
+                    foreign key (P_ID) references patient (P_ID),
+                    foreign key (B_ID) references bills (B_ID));
+select * from pays;
+
+use HospitalDB;
+
+create table governs ( N_ID int,
+					   R_ID int,
+                       primary key(N_ID,R_ID),
+                       foreign key (N_ID) references nurses (N_ID),
+                       foreign key (R_ID) references rooms (R_ID));
+select * from governs;
+
+use HospitalDB;
+
+create table maintains ( RCP_ID int,
+						Record_No int,
+                        primary key (RCP_ID,Record_No),
+                        foreign key(RCP_ID) references receptionist (RCP_ID),
+                        foreign key(Record_No) references records(Record_No));
+select * from maintains;
+
+# STORED PROCEDURES
+ 
+ call ADD_patient;
+ call Add_Doctor;
+ call Add_Rooms;
+ call Add_Nurse;
+ call Add_Bills;
+ call add_testreport;
+ call Add_Records;
+ call Add_employee;
+ call Add_consults;
+ 
+ #triggers
+#1.bills table: before insert
+use hospitaldb;
+delimiter //
+create trigger bill_results
+before insert
+on bills
+for each row
+begin
+if new.amount > 0 then
+signal sqlstate'45000'
+set message_text= "Bill amount cannot be negative";
+end if;
+end;
+
+#2.testreport table:after insert
+use hospitaldb;
+create table test_report_log(TR_ID int primary key,
+                              P_ID int,
+                              R_ID int,
+                              Test_Type varchar(50),
+                              Result varchar(50));
+	select* from test_report_log;
+    alter table test_report_log
+    add entrytime time;
+    
+    delimiter //
+    create trigger test_report_details
+    after insert
+    on test_report
+    for each row
+    begin
+    insert into test_report_log values (new.TR_ID,new.P_ID,new.R_ID,new.Test_Type,new.Result,now());
+    end;
+    select* from test_report_log;
+    insert into test_report values (411,1,301,"MRI","Normal");
+    
+    #3.1.bills table:before update
+    use hospitaldb;
+    delimiter //
+    create trigger before_update_bills
+    before update
+    on bills
+    for each row
+    begin
+	if new.amount < 0 then
+    signal sqlstate'45000'
+set message_text= "Bill amount cannot be negative";
+end if;
+end;
+
+#2.rooms table
+ use hospitaldb;
+    delimiter //
+    create trigger before_update_rooms
+    before update
+    on rooms
+    for each row
+    begin
+	if new.R_capacity <= 0 then
+    signal sqlstate'45000'
+set message_text= "Room capacity must be greater than zero";
+end if;
+end;
+
+#4.bills:after update
+use hospitaldb;
+create table bills_update(B_ID int primary key,
+                          old_amount int,
+                          new_amount int,
+                          updated_on time);
+	select * from bills_update;
+    insert into bills_update values (401,2000,3000,now());
+    
+    delimiter //
+    create trigger bills_history
+    after update
+    on bills
+    for each row 
+    begin
+    if old.amount<> new.amount then
+    insert into bills_update values(old.B_ID,OLD.amount,new.amount,now());
+    end if;
+    end;
+    
+    #5.before delete-back up patient data
+     use hospitaldb;
+     create table patient_backup(P_ID int primary key,
+                                 P_Name varchar(20),
+                                 P_Gender varchar(10),
+                                 P_Age int,
+                                 P_Mobileno varchar(10),
+                                 P_DOB date);
+	select * from patient_backup;
+    alter table patient_backup
+    add backup_time varchar (100);
+    
+    delimiter //
+    create trigger before_delete_patient
+    before delete 
+    on patients 
+    for each row
+    begin
+    insert into patient_backup values (old.P_ID,old.P_Name,old.P_Gender,old.P_Age,old.P_Mobileno,old.P_DOB,now());
+    end;
+    
+    #2back_up records data
+     use hospitaldb;
+     create table records_backup(Record_No int primary key,
+								 App_No int,
+                                 Backup_update varchar(100));
+		select * from records_backup;
+        
+        delimiter //
+        create trigger before_delete_records
+        before delete
+        on records
+        for each row
+        begin
+        insert into records_backup values(old.Record_No,old.App_No,now());
+        end;
+        
+        #6. bills table:after delete
+        use hospitaldb;
+        create table bills_delete_log(B_ID int primary key,
+                                      P_ID int,
+                                      amount int,
+                                      deleted_on int);
+		select * from bills_delete_log;
+        
+        delimiter //
+        create trigger after_delete_patient
+        after delete 
+        on bills 
+        for each row
+        begin
+        insert into bills_delete_log values(old.B_ID,old.P_ID,old.amount,now());
+        end;
